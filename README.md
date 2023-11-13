@@ -1,2 +1,2 @@
 # bssd.jl
-Bayesian Safey Signal Detection in Julia
+Bayesian Safety Signal Detection in Julia
