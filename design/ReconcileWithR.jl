@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.26
+# v0.19.32
 
 using Markdown
 using InteractiveUtils
@@ -88,7 +88,7 @@ df_large = DataFrame(CSV.File("large_historic.csv"))
 # ╔═╡ 646576ca-4220-4383-8240-e9ebbbb23b28
 map_large = sample(
     meta_analytic(df_large.y, df_large.time, df_large.trial, prior_a, prior_b), 
-    HMC(0.05, 10), MCMCThreads(), 1000, 4
+    HMC(0.05, 10), MCMCThreads(), 10000, 4
 )
 
 # ╔═╡ 30178d1a-4156-41fc-8204-89539c394f8f
@@ -118,7 +118,7 @@ Turing = "~0.29.3"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.1"
+julia_version = "1.9.3"
 manifest_format = "2.0"
 project_hash = "4b489505e6354c757d617578ce90c4eaab28d051"
 
@@ -467,7 +467,7 @@ weakdeps = ["Dates", "LinearAlgebra"]
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "1.0.2+0"
+version = "1.0.5+0"
 
 [[deps.CompositionsBase]]
 git-tree-sha1 = "802bb88cd69dfd1509f6670416bd4434015693ad"
@@ -1400,7 +1400,7 @@ version = "0.42.2+0"
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "FileWatching", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
-version = "1.9.0"
+version = "1.9.2"
 
 [[deps.PlotThemes]]
 deps = ["PlotUtils", "Statistics"]
