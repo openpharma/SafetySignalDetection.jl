@@ -9,7 +9,8 @@ using Distributions
 using StatsPlots
 using DataFrames
 using CSV
-df = DataFrame(CSV.File("bssd_current.csv"))
+pwd()
+df = DataFrame(CSV.File("design/bssd_current.csv"))
 
 ## Unblinded analysis ----------------------------------------------------------------------
 
@@ -70,37 +71,6 @@ mean(df_tmt2.y)
 # Prob(T > C | X) = Prob(C > T | X):
 mean(DataFrame(fit_unblinded_bssd).pi1 .< DataFrame(fit_unblinded_bssd).pi2)
 # ~0.99
-
-## Mixture approximation ----------------------------------------------------------------------
-
-# Pkg.add("ExpectationMaximization")
-using ExpectationMaximization
-# Try to fit a beta mixture.
-N = 50_000
-α₁ = 10
-β₁ = 5
-α₂ = 5
-β₂ = 10
-π = 0.3
-
-# Mixture Model of two betas.
-mix_true = MixtureModel([Beta(α₁, β₁), Beta(α₂, β₂)], [π, 1 - π]) 
-
-# Generate N samples from the mixture.
-y = rand(mix_true, N)
-histogram(y)
-stephist(y, label = "beta mixture", norm = :pdf)
-
-# Initial guess.
-mix_guess = MixtureModel([Beta(1, 1), Beta(1, 1)], [0.5, 1 - 0.5])
-test = rand(mix_guess, N)
-
-# Fit the MLE with the stochastic EM algorithm:
-# (note that the classic EM algorithm does not work, see https://github.com/dmetivie/ExpectationMaximization.jl/issues/9,
-# but for our purposes that is not important)
-mix_mle = fit_mle(mix_guess, y, method = StochasticEM())
-plot!(x->pdf(mix_mle, x), label = "fitted distribution")
-
 
 
 ## Meta-analytic prior model fitting ----------------------------------------------------------------------
@@ -169,6 +139,52 @@ histogram(pi_star_samples)
 # This can then be approximated with the beta mixture prior (see above) in the interim step.
 
 
+
+## Mixture approximation ----------------------------------------------------------------------
+
+# Pkg.add("ExpectationMaximization")
+using ExpectationMaximization
+# Try to fit a beta mixture.
+N = 50_000
+α₁ = 10
+β₁ = 5
+α₂ = 5
+β₂ = 10
+π = 0.3
+
+# Mixture Model of two betas.
+mix_true = MixtureModel([Beta(α₁, β₁), Beta(α₂, β₂)], [π, 1 - π]) 
+
+# Generate N samples from the mixture.
+y = rand(mix_true, N)
+histogram(y)
+stephist(y, label = "beta mixture", norm = :pdf)
+
+# Initial guess.
+mix_guess = MixtureModel([Beta(1, 1), Beta(1, 1)], [0.5, 1 - 0.5])
+test = rand(mix_guess, N)
+
+# Fit the MLE with the stochastic EM algorithm:
+# (note that the classic EM algorithm does not work, see https://github.com/dmetivie/ExpectationMaximization.jl/issues/9,
+# but for our purposes that is not important)
+mix_mle = fit_mle(mix_guess, y, method = StochasticEM())
+plot!(x -> pdf(mix_mle, x), label = "fitted distribution")
+
+function fitmix2(x)
+	# Fit a two-compnent Beta mixture to numerical sample x 
+	mix_guess = MixtureModel([Beta(1, 1), Beta(1, 1)], [0.5, 1 - 0.5])
+	test = rand(mix_guess, N)
+	# Fit the MLE with the stochastic EM algorithm:
+	# (note that the classic EM algorithm does not work, see https://github.com/dmetivie/ExpectationMaximization.jl/issues/9,
+	# but for our purposes that is not important)
+	mix_mle = fit_mle(mix_guess, x, method = StochasticEM())
+	mix_mle
+end;
+
+mix1 = fitmix2(pi_star_samples)
+mix1
+
+
 ## Blinded analysis ----------------------------------------------------------------------
 
 # Here we either need
@@ -226,11 +242,11 @@ freqtable(df.tmt)
 # so this is what we use below as randomization ratio
 
 # Need to see how many particles we need here... for now we just stay with 100 as in the website example.
-gibbs_sampler = Gibbs(PG(100, :is_exp), HMC(0.05, 10, :pi_exp, :pi_ctrl))
-fit_blinded_bssd = sample(blinded_bssd(df.y, df.time, prior_exp, prior_ctrl, 73/100), 
-             gibbs_sampler, MCMCThreads(), 1000, 4)
+# gibbs_sampler = Gibbs(PG(100, :is_exp), HMC(0.05, 10, :pi_exp, :pi_ctrl))
+# fit_blinded_bssd = sample(blinded_bssd(df.y, df.time, prior_exp, prior_ctrl, 73/100), 
+#              gibbs_sampler, MCMCThreads(), 1000, 4)
 # Wall duration: 635 secs!
-mean(DataFrame(fit_blinded_bssd).pi_ctrl .< DataFrame(fit_blinded_bssd).pi_exp)
+# mean(DataFrame(fit_blinded_bssd).pi_ctrl .< DataFrame(fit_blinded_bssd).pi_exp)
 # ~0.86
 
 # This seems very slow. Let's try with a mixture model for the likelihood, so integrating out the treatment assignment.

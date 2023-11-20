@@ -7,6 +7,9 @@ using InteractiveUtils
 # ╔═╡ 353bbb38-d1c5-4178-97af-b63e145089ff
 using Turing
 
+# ╔═╡ d9ad7f47-0055-4c3f-95d1-843e2015d323
+using Random
+
 # ╔═╡ ef4f8a45-a52e-438e-9051-a3cb45eb7198
 using Distributions
 
@@ -19,11 +22,17 @@ using DataFrames
 # ╔═╡ 373609c1-a7e5-44be-b573-cbe763b098c8
 using CSV
 
+# ╔═╡ a4edf51e-1329-41d3-b9d4-251bf85e297d
+using ExpectationMaximization
+
 # ╔═╡ 0e9fdee3-20f4-4d68-a982-bdb852213a40
 md"# Reproducing R bssd inferences in Julia"
 
 # ╔═╡ 68755db6-6a0e-412c-ac13-29ce5b3f8daa
 md" # Load"
+
+# ╔═╡ d55cbb45-f45a-4162-bbcd-f2675eb52833
+seed = 2023
 
 # ╔═╡ a053a2f2-6a5d-4713-b38d-fa87e430f7a4
 prior_a = Beta(1 / 3, 1 / 3)
@@ -31,11 +40,16 @@ prior_a = Beta(1 / 3, 1 / 3)
 # ╔═╡ 21afc6f9-ff92-4a60-b090-61887d3a48d7
 prior_b = Beta(5, 5)
 
+# ╔═╡ 3c5217c6-6845-4feb-bd88-b04dc60f7389
+prob_ctrl = 0.333
+
+# ╔═╡ 36036727-6c38-48ea-a2a5-c8a2f32b7c8f
+prob_exp = 1 - prob_ctrl
+
 # ╔═╡ 732b8f60-8aaf-437c-b785-ce28df85ac62
 md" ### Functions"
 
 # ╔═╡ 5a83c907-e847-4842-9d36-022aab1ca07b
-# Functions
 @model function meta_analytic(y, time, trialindex, prior_a, prior_b)
 
     n = length(y)
@@ -55,11 +69,63 @@ md" ### Functions"
 
 end;
 
-# ╔═╡ cd352437-8f9c-4047-9c67-68f8c00c7593
+# ╔═╡ a7c2dd7d-702f-44cf-a63c-c4cd69052fde
+function fitmix2(x)
+	# Fit a two-compnent Beta mixture to numerical sample x 
+	mix_guess = MixtureModel([Beta(1, 1), Beta(1, 1)], [0.5, 1 - 0.5])
+	test = rand(mix_guess, length(x))
+	# Fit the MLE with the stochastic EM algorithm:
+	# (note that the classic EM algorithm does not work, see https://github.com/dmetivie/ExpectationMaximization.jl/issues/9,
+	# but for our purposes that is not important)
+	mix_mle = fit_mle(mix_guess, x, method = StochasticEM())
+	mix_mle
+end;
 
+# ╔═╡ cd352437-8f9c-4047-9c67-68f8c00c7593
+@model function blinded_bssd_mix(y, time, prior_exp, prior_ctrl, experimental_proportion)
+
+    n = length(y)
+    pi_exp ~ prior_exp
+    pi_ctrl ~ prior_ctrl
+    mu_exp = log(-log(1 - pi_exp))
+    mu_ctrl = log(-log(1 - pi_ctrl))
+
+    for i in 1:n
+        x_exp = mu_exp + log(time[i])
+        x_ctrl = mu_ctrl + log(time[i])
+        prob_exp = 1 - exp(-exp(x_exp))
+        prob_ctrl = 1 - exp(-exp(x_ctrl))
+        y[i] ~ MixtureModel(
+            Bernoulli[
+                Bernoulli(prob_exp),
+                Bernoulli(prob_ctrl)
+            ],
+            [experimental_proportion, 1 - experimental_proportion]
+        )
+    end
+
+end;
 
 # ╔═╡ 38e844e4-2222-481b-92e8-bcdeb5c98afc
+@model function unblinded_bssd(y, time, tmt, prior1, prior2)
 
+    n = length(y)
+    pi1 ~ prior1
+    pi2 ~ prior2
+    mu1 = log(-log(1 - pi1))
+    mu2 = log(-log(1 - pi2))
+
+    for i in 1:n
+        if tmt[i] == 1
+            x = mu1 + log(time[i])
+        else
+            x = mu2 + log(time[i])
+        end
+        prob = 1 - exp(-exp(x))
+        y[i] ~ Bernoulli(prob)
+    end
+
+end;
 
 # ╔═╡ 88b4ece3-a57b-4e74-ba36-77e69a9245d0
 md" # Generating priors"
@@ -69,6 +135,9 @@ md" ## Small historical dataset"
 
 # ╔═╡ 576b6c89-dc26-4ceb-8d9e-5d13914e9c0e
 df_small = DataFrame(CSV.File("small_historic.csv"))
+
+# ╔═╡ 033a12d6-8f13-4c74-b046-05de32f9986a
+n_small = nrow(df_small)
 
 # ╔═╡ 5d092cef-0741-4b5c-bd95-277f1360e7b7
 map_small = sample(
@@ -85,6 +154,9 @@ md" ## Large historical dataset"
 # ╔═╡ afd404db-4aa9-4c94-8ecc-ee31f590888f
 df_large = DataFrame(CSV.File("large_historic.csv"))
 
+# ╔═╡ abc3d533-0d4d-4775-8efd-296059b68f5e
+n_large = nrow(df_large)
+
 # ╔═╡ 646576ca-4220-4383-8240-e9ebbbb23b28
 map_large = sample(
     meta_analytic(df_large.y, df_large.time, df_large.trial, prior_a, prior_b), 
@@ -94,8 +166,140 @@ map_large = sample(
 # ╔═╡ 30178d1a-4156-41fc-8204-89539c394f8f
 describe(map_large)
 
-# ╔═╡ a7178cf3-58ee-4105-bde8-6632401d33eb
-md" this is _quite different_ to the equivalent R output..."
+# ╔═╡ ea37060b-b9e9-445c-bedb-1dfafdff215c
+md" note that I had to jack up the number of samples"
+
+# ╔═╡ 79958c22-079d-4f5d-8d88-6285968c8001
+md" # Creating mixtures"
+
+# ╔═╡ 2d7b0531-68a7-4ff1-bc56-d4becb5ec19d
+md" ## Small historical dataset"
+
+# ╔═╡ a0e967de-281f-4a60-b599-b73d8dc20ec4
+map_samples_small = DataFrame(map_small)
+
+# ╔═╡ 73468c57-80e6-4aa4-8051-23d46884ec79
+Random.seed!(seed)
+
+# ╔═╡ 10d2f89d-69b9-41bc-9030-1971fa92de91
+pi_star_small = [
+	rand(Beta(row.a * row.b * n_small, (1 - row.a) * row.b * n_small), 1)[1] 
+	for row in eachrow(map_samples_small)
+]
+
+# ╔═╡ 41188a00-55f6-4594-995c-63134f15348b
+mix_small = fitmix2(pi_star_small)
+
+# ╔═╡ c690ec33-5973-419d-9481-b811462707f7
+md" ## Large historical dataset"
+
+# ╔═╡ 874f42b5-e5c6-40b8-83fc-fb1924ab1be8
+map_samples_large = DataFrame(map_large)
+
+# ╔═╡ bed2fde6-af91-450e-992c-074938863216
+Random.seed!(seed)
+
+# ╔═╡ ebcbdd34-ef8e-4fa6-895f-cdbb8e81dd15
+pi_star_large = [
+	rand(Beta(row.a * row.b * n_large, (1 - row.a) * row.b * n_large), 1)[1] 
+	for row in eachrow(map_samples_large)
+]
+
+# ╔═╡ cc1ac423-49b8-4a9b-a688-7a6fcdffd5fd
+pi_star_large_finite = filter(x -> x > -Inf && x < Inf, pi_star_large)
+
+# ╔═╡ a062c9f5-9a6c-489a-9552-b1427d7142af
+mix_large = fitmix2(pi_star_large_finite)
+
+# ╔═╡ 64a08b99-9ff1-4c9f-a855-e6ed72b971ac
+md" # Blinded analyses"
+
+# ╔═╡ e578935b-e564-449e-819b-bf1a936947a5
+df_small_current = DataFrame(CSV.File("small_current.csv"))
+
+# ╔═╡ a591c387-6fed-47ea-bf11-fc7bdc883b4f
+df_large_current = DataFrame(CSV.File("large_current.csv"))
+
+# ╔═╡ f8bd753e-644c-49c8-8075-45dcd7d9cc3e
+prior_exp = MixtureModel(
+    Beta[
+        Beta(1, 1)
+    ], 
+    [1]
+)
+
+# ╔═╡ 48424f79-01f3-4fd9-86f2-b1e5aca0071d
+md" ## Small historical with small current dataset"
+
+# ╔═╡ 1a9c9062-ea81-442b-803a-5288b680554f
+bssd_small_small_blinded = sample(blinded_bssd_mix(df_small_current.y, df_small_current.time, prior_exp, mix_small, prob_exp), 
+             HMC(0.05, 10), MCMCThreads(), 1000, 4)
+
+# ╔═╡ 5f504139-2c4e-4b6b-a270-a47a2ccf3c9a
+describe(bssd_small_small_blinded)
+
+# ╔═╡ 56467e50-3012-4164-b4cd-897d3e4945af
+[mean(shuffle(DataFrame(bssd_small_small_blinded).pi_exp) .> shuffle(DataFrame(bssd_small_small_blinded).pi_ctrl)) for i in 1:10]
+
+# ╔═╡ 66c19dfd-b8d4-4d28-aea4-191785c8fa84
+md" ## Small historical with large current dataset"
+
+# ╔═╡ eb77188e-ae21-4a6d-921d-4bef2a08412a
+bssd_small_large_blinded = sample(blinded_bssd_mix(df_large_current.y, df_large_current.time, prior_exp, mix_small, prob_exp), 
+             HMC(0.05, 10), MCMCThreads(), 1000, 4)
+
+# ╔═╡ fc9ae0e9-d741-4635-832b-206f0c5d25af
+describe(bssd_small_large_blinded)
+
+# ╔═╡ aa00192f-dccb-484b-9db6-c10e61f56938
+[mean(shuffle(DataFrame(bssd_small_large_blinded).pi_exp) .> shuffle(DataFrame(bssd_small_large_blinded).pi_ctrl)) for i in 1:10]
+
+# ╔═╡ 96c69d8f-bab8-439e-b346-5216e5863e76
+md" ## Large historical with small current dataset"
+
+# ╔═╡ 3ad215eb-851e-4160-bd19-409592192fa6
+md" ## Large historical with large current dataset"
+
+# ╔═╡ d579bb36-facc-4405-a1bf-f0f512f1b773
+md" # Unblinded analyses"
+
+# ╔═╡ 114f424c-9a60-4662-b914-68370f7fc592
+md" ## Small historical with small current dataset"
+
+# ╔═╡ 218d0902-79de-4df1-9c70-076dc09a51a4
+bssd_small_small_unblinded = sample(unblinded_bssd(df_small_current.y, df_small_current.time, df_small_current.tmt, prior_exp, mix_small), 
+             HMC(0.05, 10), MCMCThreads(), 1000, 4)
+
+# ╔═╡ 92620359-83b6-4fa5-a824-e23e995b6d6a
+describe(bssd_small_small_unblinded)
+
+# ╔═╡ 66a53c33-1b14-485b-aac5-45ff2c183886
+[mean(shuffle(DataFrame(bssd_small_small_unblinded).pi2) .> shuffle(DataFrame(bssd_small_small_unblinded).pi1)) for i in 1:10]
+
+# ╔═╡ 9e12eefc-48b5-4f2f-87d9-875a530ab303
+md" rates appear to be round the wrong way?"
+
+# ╔═╡ 1b0bc5ce-4e84-4d47-aad5-14433035399b
+md" ## Small historical with large current dataset"
+
+# ╔═╡ ff3abbb9-f148-4365-a1cf-ed922b3e0b53
+bssd_small_large_unblinded = sample(unblinded_bssd(df_large_current.y, df_large_current.time, df_large_current.tmt, prior_exp, mix_small), 
+             HMC(0.05, 10), MCMCThreads(), 1000, 4)
+
+# ╔═╡ 697af827-f113-4601-bf1a-2a66e8d9e700
+describe(bssd_small_large_unblinded)
+
+# ╔═╡ 948be758-cd55-48b9-8f13-7ea7d48b090e
+[mean(shuffle(DataFrame(bssd_small_large_unblinded).pi2) .> shuffle(DataFrame(bssd_small_large_unblinded).pi1)) for i in 1:10]
+
+# ╔═╡ 08dbd387-410c-440e-bdb9-2eba46c0f5e3
+md" as required"
+
+# ╔═╡ ade1a7fe-f64e-4f38-b769-de89e6278c0d
+md" ## Large historical with small current dataset"
+
+# ╔═╡ 5e8736e3-7993-4bd2-b40e-5f9623dcce25
+md" ## Large historical with large current dataset"
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -103,6 +307,8 @@ PLUTO_PROJECT_TOML_CONTENTS = """
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+ExpectationMaximization = "e1fe09cc-5134-44c2-a941-50f4cd97986a"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
 Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
 
@@ -110,6 +316,7 @@ Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
 CSV = "~0.10.11"
 DataFrames = "~1.6.1"
 Distributions = "~0.25.103"
+ExpectationMaximization = "~0.2.2"
 StatsPlots = "~0.15.6"
 Turing = "~0.29.3"
 """
@@ -120,7 +327,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.3"
 manifest_format = "2.0"
-project_hash = "4b489505e6354c757d617578ce90c4eaab28d051"
+project_hash = "5d844d73afb28dfa8821d4c7a4beed7984933cc8"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "5d2e21d7b0d8c22f67483ef95ebdc39c0e6b6003"
@@ -671,6 +878,12 @@ deps = ["Artifacts", "JLLWrappers", "Libdl"]
 git-tree-sha1 = "4558ab818dcceaab612d1bb8c19cee87eda2b83c"
 uuid = "2e619515-83b5-522b-bb60-26c02a35a201"
 version = "2.5.0+0"
+
+[[deps.ExpectationMaximization]]
+deps = ["ArgCheck", "Distributions", "LogExpFunctions", "Random", "StatsBase", "Test"]
+git-tree-sha1 = "9e7bb634b9a74eb3fe4d818be80340edc4b2e34f"
+uuid = "e1fe09cc-5134-44c2-a941-50f4cd97986a"
+version = "0.2.2"
 
 [[deps.ExprTools]]
 git-tree-sha1 = "27415f162e6028e81c72b82ef756bf321213b6ec"
@@ -2307,25 +2520,72 @@ version = "1.4.1+1"
 # ╠═0e9fdee3-20f4-4d68-a982-bdb852213a40
 # ╠═68755db6-6a0e-412c-ac13-29ce5b3f8daa
 # ╠═353bbb38-d1c5-4178-97af-b63e145089ff
+# ╠═d9ad7f47-0055-4c3f-95d1-843e2015d323
 # ╠═ef4f8a45-a52e-438e-9051-a3cb45eb7198
 # ╠═fe1db77d-5c58-4a45-aee8-ad1edcd86c1b
 # ╠═b8ac0093-d5d8-427c-a7aa-59a6c964d631
 # ╠═373609c1-a7e5-44be-b573-cbe763b098c8
+# ╠═a4edf51e-1329-41d3-b9d4-251bf85e297d
+# ╠═d55cbb45-f45a-4162-bbcd-f2675eb52833
 # ╠═a053a2f2-6a5d-4713-b38d-fa87e430f7a4
 # ╠═21afc6f9-ff92-4a60-b090-61887d3a48d7
+# ╠═3c5217c6-6845-4feb-bd88-b04dc60f7389
+# ╠═36036727-6c38-48ea-a2a5-c8a2f32b7c8f
 # ╠═732b8f60-8aaf-437c-b785-ce28df85ac62
 # ╠═5a83c907-e847-4842-9d36-022aab1ca07b
+# ╠═a7c2dd7d-702f-44cf-a63c-c4cd69052fde
 # ╠═cd352437-8f9c-4047-9c67-68f8c00c7593
 # ╠═38e844e4-2222-481b-92e8-bcdeb5c98afc
 # ╠═88b4ece3-a57b-4e74-ba36-77e69a9245d0
 # ╠═9045c317-8e5d-46f9-87f7-f5d9adad8020
 # ╠═576b6c89-dc26-4ceb-8d9e-5d13914e9c0e
+# ╠═033a12d6-8f13-4c74-b046-05de32f9986a
 # ╠═5d092cef-0741-4b5c-bd95-277f1360e7b7
 # ╠═5afac5db-eaac-4473-9bd0-875838c052f1
 # ╠═0240e71c-db77-4a9d-91e9-d6d49502d0f9
 # ╠═afd404db-4aa9-4c94-8ecc-ee31f590888f
+# ╠═abc3d533-0d4d-4775-8efd-296059b68f5e
 # ╠═646576ca-4220-4383-8240-e9ebbbb23b28
 # ╠═30178d1a-4156-41fc-8204-89539c394f8f
-# ╠═a7178cf3-58ee-4105-bde8-6632401d33eb
+# ╠═ea37060b-b9e9-445c-bedb-1dfafdff215c
+# ╠═79958c22-079d-4f5d-8d88-6285968c8001
+# ╠═2d7b0531-68a7-4ff1-bc56-d4becb5ec19d
+# ╠═a0e967de-281f-4a60-b599-b73d8dc20ec4
+# ╠═73468c57-80e6-4aa4-8051-23d46884ec79
+# ╠═10d2f89d-69b9-41bc-9030-1971fa92de91
+# ╠═41188a00-55f6-4594-995c-63134f15348b
+# ╠═c690ec33-5973-419d-9481-b811462707f7
+# ╠═874f42b5-e5c6-40b8-83fc-fb1924ab1be8
+# ╠═bed2fde6-af91-450e-992c-074938863216
+# ╠═ebcbdd34-ef8e-4fa6-895f-cdbb8e81dd15
+# ╠═cc1ac423-49b8-4a9b-a688-7a6fcdffd5fd
+# ╠═a062c9f5-9a6c-489a-9552-b1427d7142af
+# ╠═64a08b99-9ff1-4c9f-a855-e6ed72b971ac
+# ╠═e578935b-e564-449e-819b-bf1a936947a5
+# ╠═a591c387-6fed-47ea-bf11-fc7bdc883b4f
+# ╠═f8bd753e-644c-49c8-8075-45dcd7d9cc3e
+# ╠═48424f79-01f3-4fd9-86f2-b1e5aca0071d
+# ╠═1a9c9062-ea81-442b-803a-5288b680554f
+# ╠═5f504139-2c4e-4b6b-a270-a47a2ccf3c9a
+# ╠═56467e50-3012-4164-b4cd-897d3e4945af
+# ╠═66c19dfd-b8d4-4d28-aea4-191785c8fa84
+# ╠═eb77188e-ae21-4a6d-921d-4bef2a08412a
+# ╠═fc9ae0e9-d741-4635-832b-206f0c5d25af
+# ╠═aa00192f-dccb-484b-9db6-c10e61f56938
+# ╠═96c69d8f-bab8-439e-b346-5216e5863e76
+# ╠═3ad215eb-851e-4160-bd19-409592192fa6
+# ╠═d579bb36-facc-4405-a1bf-f0f512f1b773
+# ╠═114f424c-9a60-4662-b914-68370f7fc592
+# ╠═218d0902-79de-4df1-9c70-076dc09a51a4
+# ╠═92620359-83b6-4fa5-a824-e23e995b6d6a
+# ╠═66a53c33-1b14-485b-aac5-45ff2c183886
+# ╠═9e12eefc-48b5-4f2f-87d9-875a530ab303
+# ╠═1b0bc5ce-4e84-4d47-aad5-14433035399b
+# ╠═ff3abbb9-f148-4365-a1cf-ed922b3e0b53
+# ╠═697af827-f113-4601-bf1a-2a66e8d9e700
+# ╠═948be758-cd55-48b9-8f13-7ea7d48b090e
+# ╠═08dbd387-410c-440e-bdb9-2eba46c0f5e3
+# ╠═ade1a7fe-f64e-4f38-b769-de89e6278c0d
+# ╠═5e8736e3-7993-4bd2-b40e-5f9623dcce25
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
