@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.26
+# v0.19.32
 
 using Markdown
 using InteractiveUtils
@@ -24,6 +24,9 @@ using CSV
 
 # ╔═╡ a4edf51e-1329-41d3-b9d4-251bf85e297d
 using ExpectationMaximization
+
+# ╔═╡ 37d23e6c-7477-4b4a-b811-b2061b604a96
+using Statistics
 
 # ╔═╡ 0e9fdee3-20f4-4d68-a982-bdb852213a40
 md"# Reproducing R bssd inferences in Julia"
@@ -71,6 +74,9 @@ end;
 
 # ╔═╡ a7c2dd7d-702f-44cf-a63c-c4cd69052fde
 function fitmix2(x)
+	lower_quant = quantile!(x, 0.005)
+	upper_quant = quantile!(x, 0.995)
+	x = filter(y -> y > lower_quant && y < upper_quant, x)
 	# Fit a two-compnent Beta mixture to numerical sample x 
 	mix_guess = MixtureModel([Beta(1, 1), Beta(1, 1)], [0.5, 1 - 0.5])
 	test = rand(mix_guess, length(x))
@@ -181,11 +187,14 @@ map_samples_small = DataFrame(map_small)
 # ╔═╡ 73468c57-80e6-4aa4-8051-23d46884ec79
 Random.seed!(seed)
 
-# ╔═╡ 10d2f89d-69b9-41bc-9030-1971fa92de91
+# ╔═╡ 6aeec014-0312-405c-a0f5-55dc0155153e
 pi_star_small = [
 	rand(Beta(row.a * row.b * n_small, (1 - row.a) * row.b * n_small), 1)[1] 
 	for row in eachrow(map_samples_small)
 ]
+
+# ╔═╡ 59818564-6b6d-4ccd-9e31-6d51e656b8b4
+histogram(pi_star_small)
 
 # ╔═╡ 41188a00-55f6-4594-995c-63134f15348b
 mix_small = fitmix2(pi_star_small)
@@ -309,6 +318,7 @@ DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 ExpectationMaximization = "e1fe09cc-5134-44c2-a941-50f4cd97986a"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
 Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
 
@@ -325,9 +335,9 @@ Turing = "~0.29.3"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.1"
+julia_version = "1.9.3"
 manifest_format = "2.0"
-project_hash = "5d844d73afb28dfa8821d4c7a4beed7984933cc8"
+project_hash = "4359e7ffd037ffcea031434e2d83a0afe89b7541"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "5d2e21d7b0d8c22f67483ef95ebdc39c0e6b6003"
@@ -674,7 +684,7 @@ weakdeps = ["Dates", "LinearAlgebra"]
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "1.0.2+0"
+version = "1.0.5+0"
 
 [[deps.CompositionsBase]]
 git-tree-sha1 = "802bb88cd69dfd1509f6670416bd4434015693ad"
@@ -1613,7 +1623,7 @@ version = "0.42.2+0"
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "FileWatching", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
-version = "1.9.0"
+version = "1.9.2"
 
 [[deps.PlotThemes]]
 deps = ["PlotUtils", "Statistics"]
@@ -2526,6 +2536,7 @@ version = "1.4.1+1"
 # ╠═b8ac0093-d5d8-427c-a7aa-59a6c964d631
 # ╠═373609c1-a7e5-44be-b573-cbe763b098c8
 # ╠═a4edf51e-1329-41d3-b9d4-251bf85e297d
+# ╠═37d23e6c-7477-4b4a-b811-b2061b604a96
 # ╠═d55cbb45-f45a-4162-bbcd-f2675eb52833
 # ╠═a053a2f2-6a5d-4713-b38d-fa87e430f7a4
 # ╠═21afc6f9-ff92-4a60-b090-61887d3a48d7
@@ -2552,7 +2563,8 @@ version = "1.4.1+1"
 # ╠═2d7b0531-68a7-4ff1-bc56-d4becb5ec19d
 # ╠═a0e967de-281f-4a60-b599-b73d8dc20ec4
 # ╠═73468c57-80e6-4aa4-8051-23d46884ec79
-# ╠═10d2f89d-69b9-41bc-9030-1971fa92de91
+# ╠═6aeec014-0312-405c-a0f5-55dc0155153e
+# ╠═59818564-6b6d-4ccd-9e31-6d51e656b8b4
 # ╠═41188a00-55f6-4594-995c-63134f15348b
 # ╠═c690ec33-5973-419d-9481-b811462707f7
 # ╠═874f42b5-e5c6-40b8-83fc-fb1924ab1be8
