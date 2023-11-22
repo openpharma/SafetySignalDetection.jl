@@ -2,6 +2,8 @@ using Test
 using StableRNGs
 using Random
 using Distributions
+using DataFrames
+using Turing
 using BSSD
 
 # Helper function for numerical tests.
@@ -38,5 +40,6 @@ end
         1000
     )
 
-    check_numerical(chain, )
+    check_numerical(chain, [:a], [0.223], rtol=0.001)
+    check_numerical(chain, [:b], [0.485], rtol=0.001)
 end

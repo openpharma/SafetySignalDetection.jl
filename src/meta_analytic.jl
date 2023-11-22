@@ -5,8 +5,8 @@ This Turing model is used to generate posterior samples of the parameters `a` an
 """
 @model function meta_analytic(
     y::Vector{Bool}, 
-    time::Vector{AbstractFloat}, 
-    trialindex::Vector{Integer}, 
+    time::Vector{Float64}, 
+    trialindex::Vector{Int64}, 
     prior_a::Distribution, 
     prior_b::Distribution)
 
