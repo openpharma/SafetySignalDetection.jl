@@ -57,7 +57,7 @@ struct BetaStats <: SufficientStats
 end
 
 function suffstats(::Type{<:Beta}, x::AbstractArray{T}, w::AbstractArray{Float64}) where T<:Real
-    
+
     tw = 0.0
     sum_log_x = 0.0 * zero(T)
     sum_log_1mx = 0.0 * zero(T)
@@ -83,8 +83,9 @@ function suffstats(::Type{<:Beta}, x::AbstractArray{T}, w::AbstractArray{Float64
 end
 
 xtest = [0.7, 0.3, 0.99, 0.5, 0.9, 0.1, 0.01, 0.0001]
-suffstats(Beta, xtest)
 
+mean(xtest)
+var(xtest)
 
 # without weights we just put weight 1 for each observation
 function suffstats(::Type{<:Beta}, x::AbstractArray{T}) where T<:Real
@@ -94,10 +95,12 @@ function suffstats(::Type{<:Beta}, x::AbstractArray{T}) where T<:Real
 
 end
 
+suffstats(Beta, xtest)
+
 # generic fit function based on the sufficient statistics, on the log scale to be robust
 function fit_mle(::Type{<:Beta}, ss::BetaStats;
     maxiter::Int=1000, tol::Float64=1e-14)
-
+    @bp
     # Initialization of parameters at the moment estimators (I guess)
     temp = ((ss.x_bar * (1 - ss.x_bar)) / ss.v_bar) - 1
     α₀ = ss.x_bar * temp
@@ -137,6 +140,42 @@ fit_mle(::Type{<:Beta}, x::AbstractArray{T}, w::AbstractArray{Float64}; maxiter:
 
 # now let's try it out:
 
-sstest = suffstats(Beta, xtest)
-fit_mle(Beta, )
-fit_mle(Beta, [0.7, 0.3, 0.99, 0.5, 0.9, 0.1, 0.01, 0.0001], ones(Float64, 8))
+fit_mle(Beta, xtest)
+fit_mle(Beta, xtest, ones(Float64, 8))
+Distributions.fit(Beta, xtest)
+wtest = rand(Uniform(), 8)
+fit_mle(Beta, xtest, wtest)
+
+# Now finally having this in place the classic EM algorithm should work:
+using ExpectationMaximization
+using Distributions
+using Plots
+using Random
+
+Random.seed!(1234)
+
+# Try to fit a beta mixture.
+N = 50_000
+α₁ = 10
+β₁ = 5
+α₂ = 5
+β₂ = 10
+π = 0.3
+
+# Mixture Model of two betas.
+mix_true = MixtureModel([Beta(α₁, β₁), Beta(α₂, β₂)], [π, 1 - π]) 
+
+# Generate N samples from the mixture.
+y = rand(mix_true, N)
+stephist(y, label = "true distribution", norm = :pdf)
+
+# Initial guess.
+mix_guess = MixtureModel([Beta(1, 1), Beta(1, 1)], [0.5, 1 - 0.5])
+test = rand(mix_guess, N)
+stephist!(test, label = "guess distribution", norm = :pdf)
+
+# Fit the MLE with the classic EM algorithm:
+using Debugger
+@Debugger.run mix_mle = fit_mle(mix_guess, y)
+fit_y = rand(mix_mle, N)
+stephist!(fit_y, label = "fitMLE distribution", norm = :pdf)
