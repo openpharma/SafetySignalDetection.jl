@@ -3,50 +3,6 @@ import Distributions: fit_mle, varm
 using SpecialFunctions
 using LinearAlgebra
 
-fit_mle(Beta, [0.7, 0.3, 0.99, 0.5, 0.9, 0.1, 0.01, 0.0001])
-
-# Version 2 which operates on the log scale, i.e.:
-# γ := log(α)
-# δ := log(β)
-# This should be safer in general because we can contain negative values during the Newton-Raphson iterations.
-function fit_mle_logscale(::Type{<:Beta}, x::AbstractArray{T};
-    maxiter::Int=1000, tol::Float64=1e-14) where T<:Real
-
-    α₀,β₀ = params(fit(Beta, x))
-
-    g₁ = mean(log.(x))
-    g₂ = mean(log.(one(T) .- x))
-
-    θ= [log(α₀) ; log(β₀)]
-
-    converged = false
-    t=0
-    while !converged && t < maxiter
-        t += 1
-        α = exp(θ[1])
-        β = exp(θ[2])
-        temp1 = digamma(α + β)
-        temp2 = trigamma(α + β)
-        temp3 = g₁ + temp1 - digamma(α)
-        grad = [temp3 * α
-                (temp1 + g₂ - digamma(β)) * β]
-        hess = [((temp2 - trigamma(α)) * α + temp3) * α             temp2 * β * α
-                temp2 * α * β       ((temp2 - trigamma(β)) * β + temp1 + g₂ - digamma(β)) * β  ]
-        Δθ = hess\grad #newton step
-        θ .-= Δθ
-        converged = dot(Δθ,Δθ) < 2*tol #stopping criterion
-    end
-
-    α = exp(θ[1])
-    β = exp(θ[2])
-    return Beta(α, β)
-end
-
-fit_mle_logscale(Beta, [0.7, 0.3, 0.99, 0.5, 0.9, 0.1, 0.01, 0.0001])
-
-
-# Now on to the weighted version
-
 # sufficient statistics - these capture everything of the data we need
 struct BetaStats <: SufficientStats
     sum_log_x::Float64 # (weighted) sum of log(x)
@@ -56,7 +12,7 @@ struct BetaStats <: SufficientStats
     v_bar::Float64 # (weighted) variance of x
 end
 
-function suffstats(::Type{<:Beta}, x::AbstractArray{T}, w::AbstractArray{Float64}) where T<:Real
+function suffstats(::Type{<:Beta}, x::AbstractArray{T}, w::AbstractArray{T}) where T<:Real
 
     tw = 0.0
     sum_log_x = 0.0 * zero(T)
@@ -82,11 +38,6 @@ function suffstats(::Type{<:Beta}, x::AbstractArray{T}, w::AbstractArray{Float64
     BetaStats(sum_log_x, sum_log_1mx, tw, x_bar, v_bar)
 end
 
-xtest = [0.7, 0.3, 0.99, 0.5, 0.9, 0.1, 0.01, 0.0001]
-
-mean(xtest)
-var(xtest)
-
 # without weights we just put weight 1 for each observation
 function suffstats(::Type{<:Beta}, x::AbstractArray{T}) where T<:Real
     
@@ -95,12 +46,10 @@ function suffstats(::Type{<:Beta}, x::AbstractArray{T}) where T<:Real
 
 end
 
-suffstats(Beta, xtest)
-
 # generic fit function based on the sufficient statistics, on the log scale to be robust
 function fit_mle(::Type{<:Beta}, ss::BetaStats;
     maxiter::Int=1000, tol::Float64=1e-14)
-    @bp
+
     # Initialization of parameters at the moment estimators (I guess)
     temp = ((ss.x_bar * (1 - ss.x_bar)) / ss.v_bar) - 1
     α₀ = ss.x_bar * temp
@@ -136,7 +85,7 @@ end
 
 # then define methods for the original data
 fit_mle(::Type{<:Beta}, x::AbstractArray{T}; maxiter::Int=1000, tol::Float64=1e-14) where T<:Real = fit_mle(Beta, suffstats(Beta, x))
-fit_mle(::Type{<:Beta}, x::AbstractArray{T}, w::AbstractArray{Float64}; maxiter::Int=1000, tol::Float64=1e-14) where T<:Real = fit_mle(Beta, suffstats(Beta, x, w))
+fit_mle(::Type{<:Beta}, x::AbstractArray{T}, w::AbstractArray{T}; maxiter::Int=1000, tol::Float64=1e-14) where T<:Real = fit_mle(Beta, suffstats(Beta, x, w))
 
 # now let's try it out:
 
@@ -175,7 +124,22 @@ test = rand(mix_guess, N)
 stephist!(test, label = "guess distribution", norm = :pdf)
 
 # Fit the MLE with the classic EM algorithm:
-using Debugger
-@Debugger.run mix_mle = fit_mle(mix_guess, y)
+mix_mle = fit_mle(mix_guess, y)
 fit_y = rand(mix_mle, N)
 stephist!(fit_y, label = "fitMLE distribution", norm = :pdf)
+# This does not seem to work? Why?
+
+# Test first if we can downweight large values and get expected result.
+test_weights = Float64.(ifelse.(y .> 0.5, 0.01, 1))
+low_res = fit_mle(Beta, y, test_weights)
+
+fit_low_res = rand(low_res, N)
+stephist!(fit_low_res, label = "fit_low_res", norm = :pdf)
+
+# Same for high values
+test_weights2 = Float64.(ifelse.(y .< 0.5, 0.01, 1))
+high_res = fit_mle(Beta, y, test_weights2)
+
+fit_high_res = rand(high_res, N)
+stephist!(fit_high_res, label = "fit_high_res", norm = :pdf)
+# So that seems to work fine.
