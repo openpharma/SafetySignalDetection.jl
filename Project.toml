@@ -1,3 +1,8 @@
+name = "BSSD"
+uuid = "ad9a3248-762c-4ade-a843-8f185e2c18ff"
+authors = ["Daniel Sabanes Bove <daniel.sabanes_bove@roche.com>", "Kristian Brock <kristian.brock@gmail.com>"]
+version = "0.0.1"
+
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
@@ -6,5 +11,7 @@ ExpectationMaximization = "e1fe09cc-5134-44c2-a941-50f4cd97986a"
 FreqTables = "da1fdf0e-e0ff-5433-a45f-9bb5ff651cb1"
 Pluto = "c3e4b0f8-55cb-11ea-2926-15256bba5781"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+StableRNGs = "860ef19b-820b-49d6-a774-d7a799459cd3"
 StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
