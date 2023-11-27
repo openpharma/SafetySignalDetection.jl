@@ -1,4 +1,4 @@
-@testset "meta_analytic_model" begin
+@testset "meta_analysis_model" begin
     rng = StableRNG(123)
 
     n_trials = 5
@@ -11,7 +11,7 @@
 
     chain = sample(
         rng,
-        meta_analytic_model(df.y, df.time, df.trialindex, Beta(2, 8), Beta(9, 10)), 
+        meta_analysis_model(df.y, df.time, df.trialindex, Beta(2, 8), Beta(9, 10)), 
         HMC(0.05, 10), 
         1000
     )

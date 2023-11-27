@@ -1,9 +1,9 @@
 """
-    Meta Analytic Prior Model
+    Meta Analysis Model
 
 This Turing model is used to generate posterior samples of the parameters `a` and `b`.
 """
-@model function meta_analytic_model(
+@model function meta_analysis_model(
     y::Vector{Bool}, 
     time::Vector{Float64}, 
     trialindex::Vector{Int64}, 
@@ -47,7 +47,7 @@ function meta_analytic_samples(
     args...
     )
     chain = sample(
-        meta_analytic_model(df.y, df.time, df.trialindex, prior_a, prior_b),  
+        meta_analysis_model(df.y, df.time, df.trialindex, prior_a, prior_b),  
         HMC(0.05, 10), 
         MCMCThreads(),
         args...

@@ -8,11 +8,13 @@ using ExpectationMaximization
 using DataFrames
 
 export 
-    meta_analytic_model,
+    meta_analysis_model,
     meta_analytic_samples,
-    fit_beta_mixture
+    fit_beta_mixture,
+    blinded_analysis_model
 
-include("meta_analytic.jl")
+include("meta_analysis.jl")
 include("fit_beta_mixture.jl")
+include("blinded_analysis.jl")
 
 end
