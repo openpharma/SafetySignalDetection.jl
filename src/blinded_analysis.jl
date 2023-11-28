@@ -33,3 +33,31 @@ of a trial with `exp_proportion` ratio of experimental arm patients relative to 
     end
 
 end
+
+"""
+    Blinded Analysis Posterior Samples Generation
+
+This function wraps the Turing model and runs it for a data frame `df` with:
+    - `y`: Bool (did the adverse event occur?)
+    - `time`: Float64 (time until adverse event or until last treatment or follow up)
+
+Note that arguments for the number of samples per chain and the number of chains have to be passed as well.
+    
+It returns a `DataFrame` with the posterior samples for `pi_exp` and `pi_ctrl`.
+"""
+function blinded_analysis_samples(
+    df::DataFrame,
+    prior_exp::Distribution, 
+    prior_ctrl::Distribution, 
+    exp_proportion::Float64,
+    args...
+    )
+    chain = sample(
+        blinded_analysis_model(df.y, df.time, prior_exp, prior_ctrl, exp_proportion),  
+        HMC(0.05, 10), 
+        MCMCThreads(),
+        args...
+    )
+    DataFrame(chain)
+    
+end
