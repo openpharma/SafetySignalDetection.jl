@@ -1,4 +1,4 @@
-name = "BayesSafetySignalDetect"
+name = "SafetySignalDetection"
 uuid = "ad9a3248-762c-4ade-a843-8f185e2c18ff"
 authors = ["Daniel Sabanes Bove <daniel.sabanes_bove@roche.com>", "Kristian Brock <kristian.brock@gmail.com>"]
 version = "0.0.1"
