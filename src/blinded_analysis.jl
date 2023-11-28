@@ -58,6 +58,7 @@ function blinded_analysis_samples(
         MCMCThreads(),
         args...
     )
-    DataFrame(chain)
+    df = DataFrame(chain)
+    select!(df, [:pi_exp, :pi_ctrl])
     
 end

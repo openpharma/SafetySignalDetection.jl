@@ -33,10 +33,10 @@ end
         time = rand(rng, Exponential(1), 2 * n_per_arm)
     )
 
-    samples = blinded_analysis_samples(df, Beta(2, 8), Beta(9, 10), 1000, 1)
+    samples = blinded_analysis_samples(df, Beta(2, 8), Beta(9, 10), 0.5, 100, 1)
 
     @test typeof(samples) == DataFrame
-    @test nrow(samples) == 1000
+    @test nrow(samples) == 100
     @test ncol(samples) == 2
     @test names(samples) == ["pi_exp", "pi_ctrl"]
 end

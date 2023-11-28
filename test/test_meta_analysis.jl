@@ -31,8 +31,8 @@ end
         trialindex = repeat(1:n_trials, n_patients)
     )
 
-    samples = meta_analytic_samples(df, Beta(2, 8), Beta(9, 10), 1000, 1)
+    samples = meta_analytic_samples(df, Beta(2, 8), Beta(9, 10), 100, 1)
 
     @test typeof(samples) == Vector{Float64}
-    @test length(samples) == 1000
+    @test length(samples) == 100
 end

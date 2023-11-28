@@ -4,7 +4,7 @@ using Random
 using Distributions
 using DataFrames
 using Turing
-using BSSD
+using SafetySignalDetection
 
 include("test_helpers.jl")
 include("test_meta_analysis.jl")
