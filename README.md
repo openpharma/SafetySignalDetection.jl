@@ -1,4 +1,5 @@
-# bssd.jl
+# BayesSafetySignalDetect.jl
+
 Bayesian Safety Signal Detection in Julia
 
 ## Helpful links
