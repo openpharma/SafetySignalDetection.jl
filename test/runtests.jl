@@ -4,7 +4,7 @@ using Random
 using Distributions
 using DataFrames
 using Turing
-using BSSD
+using SafetySignalDetection
 
 # Helper function for numerical tests.
 # Taken from https://github.com/TuringLang/Turing.jl/blob/master/test/test_utils/numerical_tests.jl#L41 for now.

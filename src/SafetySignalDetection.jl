@@ -1,4 +1,4 @@
-module BSSD
+module SafetySignalDetection
 
 using Turing
 using StatsPlots
