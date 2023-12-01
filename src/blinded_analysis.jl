@@ -54,7 +54,7 @@ function blinded_analysis_samples(
     )
     chain = sample(
         blinded_analysis_model(df.y, df.time, prior_exp, prior_ctrl, exp_proportion),  
-        HMC(0.05, 10), 
+        NUTS(0.65),
         MCMCThreads(),
         args...
     )

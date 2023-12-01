@@ -12,7 +12,7 @@
     chain = sample(
         rng,
         meta_analysis_model(df.y, df.time, df.trialindex, Beta(2, 8), Beta(9, 10)), 
-        HMC(0.05, 10), 
+        NUTS(0.65), 
         1000
     )
 
