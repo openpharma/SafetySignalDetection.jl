@@ -13,7 +13,7 @@
     chain = sample(
         rng,
         blinded_analysis_model(df.y, df.time, Beta(2, 8), Beta(9, 10), 0.5), 
-        HMC(0.05, 10), 
+        NUTS(0.65), 
         1000
     )
 

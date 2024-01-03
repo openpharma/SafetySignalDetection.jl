@@ -15,7 +15,9 @@ This Turing model is used to generate posterior samples of the parameters `a` an
 
     a ~ prior_a
     b ~ prior_b
-    pis ~ filldist(Beta(a * b * n, (1 - a) * b * n), n_trials + 1)
+    first = max(1e-10, a * b * n)
+    second = max(1e-10, (1 - a) * b * n)
+    pis ~ filldist(Beta(first, second), n_trials + 1)
 
     for i in 1:n
         pi = pis[trialindex[i]]
@@ -53,7 +55,8 @@ function meta_analytic_samples(
         args...
     )
     n_trials = maximum(df.trialindex)
-    pi_star_name = "pis[" * string(n_trials) * "]"
+    predictive_index = n_trials + 1
+    pi_star_name = "pis[" * string(predictive_index) * "]"
     vec(chain[pi_star_name].data)
     
 end

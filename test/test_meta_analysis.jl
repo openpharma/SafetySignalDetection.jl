@@ -16,8 +16,8 @@
         1000
     )
 
-    check_numerical(chain, [:a], [0.223], rtol=0.001)
-    check_numerical(chain, [:b], [0.485], rtol=0.001)
+    check_numerical(chain, [:a], [0.219], rtol=0.001)
+    check_numerical(chain, [:b], [0.483], rtol=0.001)
 end
 
 @testset "meta_analytic_samples" begin
