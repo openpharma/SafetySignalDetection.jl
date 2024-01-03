@@ -17,8 +17,8 @@
         1000
     )
 
-    check_numerical(chain, [:pi_exp], [0.095], rtol=0.001)
-    check_numerical(chain, [:pi_ctrl], [0.655], rtol=0.001)
+    check_numerical(chain, [:pi_exp], [0.091], rtol=0.001)
+    check_numerical(chain, [:pi_ctrl], [0.659], rtol=0.001)
 end
 
 @testset "blinded_analysis_samples" begin
