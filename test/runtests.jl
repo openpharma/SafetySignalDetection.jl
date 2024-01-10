@@ -3,6 +3,7 @@ using StableRNGs
 using Random
 using Distributions
 using DataFrames
+using CSV
 using Turing
 using SafetySignalDetection
 
