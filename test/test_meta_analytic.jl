@@ -20,15 +20,13 @@
     check_numerical(chain, [:b], [0.485], rtol=0.001)
 end
 
-@testset "Reconcile meta_analytic on known datasets with rstan" begin
-    # Create MAP priors on known datasets and compare to rstan output
+@testset "Reconcile meta_analytic with rstan on small historical dataset" begin
+    # Create MAP priors on known small historical dataset and compare to rstan    
     
-    seed = 2024
     prior_a = Beta(1 / 3, 1 / 3)
     prior_b = Beta(5, 5)
     prob_ctrl = 0.333
 
-    # Small historical dataset
     df_small = DataFrame(CSV.File("small_historic_dataset.csv"))
     df_small.y = map(x -> x == 1, df_small.y) # Cast to Vector{Bool}
     rng = StableRNG(123)
@@ -41,9 +39,16 @@ end
     )
     check_numerical(map_small, [:a], [0.17], atol = 0.01)
     check_numerical(map_small, [:b], [0.51], atol = 0.01)
-    
 
-    # Large historical dataset
+end
+
+@testset "Reconcile meta_analytic with rstan on large historical dataset" begin
+    # Create MAP priors on known large historical dataset and compare to rstan
+
+    prior_a = Beta(1 / 3, 1 / 3)
+    prior_b = Beta(5, 5)
+    prob_ctrl = 0.333
+
     df_large = DataFrame(CSV.File("large_historic_dataset.csv"))
     df_large.y = map(x -> x == 1, df_large.y) # Cast to Vector{Bool}
     rng = StableRNG(123)

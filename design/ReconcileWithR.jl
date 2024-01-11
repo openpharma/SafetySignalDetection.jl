@@ -335,7 +335,7 @@ Turing = "~0.29.3"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.1"
+julia_version = "1.9.3"
 manifest_format = "2.0"
 project_hash = "4359e7ffd037ffcea031434e2d83a0afe89b7541"
 
