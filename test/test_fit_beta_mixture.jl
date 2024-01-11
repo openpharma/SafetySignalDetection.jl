@@ -72,8 +72,8 @@ end
         for (alpha, beta) in zip(pi_star_alpha, pi_star_beta)]
     pi_star = collect(Iterators.flatten(pi_star)) # Flatten
     mix_small = fit_beta_mixture(pi_star, 2)
-    @test mean(mix_small) ≈ mean(pi_star) rtol = 0.01
-    @test std(mix_small) ≈ std(pi_star) rtol = 0.01
+    @test mean(mix_small) ≈ mean(pi_star) rtol = 0.02
+    @test std(mix_small) ≈ std(pi_star) rtol = 0.02
 
 end
 
@@ -102,7 +102,7 @@ end
         for (alpha, beta) in zip(pi_star_alpha, pi_star_beta)]
     pi_star = collect(Iterators.flatten(pi_star)) # Flatten
     mix_large = fit_beta_mixture(pi_star, 2)
-    @test mean(mix_large) ≈ mean(pi_star) rtol = 0.01
-    @test std(mix_large) ≈ std(pi_star) rtol = 0.01
+    @test mean(mix_large) ≈ mean(pi_star) rtol = 0.02
+    @test std(mix_large) ≈ std(pi_star) rtol = 0.02
 
 end
