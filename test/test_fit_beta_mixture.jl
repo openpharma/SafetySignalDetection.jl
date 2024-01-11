@@ -62,7 +62,7 @@ end
         rng,
         meta_analytic(df_small.y, df_small.time, df_small.trial, 
                       prior_a, prior_b), 
-        HMC(0.05, 10), 
+        NUTS(0.65), 
         10_000
     )
     df_map_small = DataFrame(map_small)
@@ -72,8 +72,8 @@ end
         for (alpha, beta) in zip(pi_star_alpha, pi_star_beta)]
     pi_star = collect(Iterators.flatten(pi_star)) # Flatten
     mix_small = fit_beta_mixture(pi_star, 2)
-    @test mean(mix_small) ≈ mean(pi_star) atol = 0.01
-    @test std(mix_small) ≈ std(pi_star) atol = 0.01
+    @test mean(mix_small) ≈ mean(pi_star) rtol = 0.01
+    @test std(mix_small) ≈ std(pi_star) rtol = 0.01
 
 end
 
@@ -92,7 +92,7 @@ end
         rng,
         meta_analytic(df_large.y, df_large.time, df_large.trial, 
                       prior_a, prior_b), 
-        HMC(0.05, 10), 
+        NUTS(0.65), 
         10_000
     )
     df_map_large = DataFrame(map_large)
@@ -102,7 +102,7 @@ end
         for (alpha, beta) in zip(pi_star_alpha, pi_star_beta)]
     pi_star = collect(Iterators.flatten(pi_star)) # Flatten
     mix_large = fit_beta_mixture(pi_star, 2)
-    @test mean(mix_large) ≈ mean(pi_star) atol = 0.01
-    @test std(mix_large) ≈ std(pi_star) atol = 0.01
+    @test mean(mix_large) ≈ mean(pi_star) rtol = 0.01
+    @test std(mix_large) ≈ std(pi_star) rtol = 0.01
 
 end

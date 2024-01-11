@@ -34,11 +34,11 @@ end
         rng,
         meta_analytic(df_small.y, df_small.time, df_small.trial, 
                       prior_a, prior_b), 
-        HMC(0.05, 10), 
+        NUTS(0.65),
         10_000
     )
-    check_numerical(map_small, [:a], [0.17], atol = 0.01)
-    check_numerical(map_small, [:b], [0.51], atol = 0.01)
+    check_numerical(map_small, [:a], [0.17], rtol = 0.01)
+    check_numerical(map_small, [:b], [0.51], rtol = 0.01)
 
 end
 
@@ -56,10 +56,10 @@ end
         rng,
         meta_analytic(df_large.y, df_large.time, df_large.trial, 
                       prior_a, prior_b), 
-        HMC(0.05, 10), 
+        NUTS(0.65), 
         10_000
     )
-    check_numerical(map_large, [:a], [0.13], atol = 0.01)
-    check_numerical(map_large, [:b], [0.55], atol = 0.01)
+    check_numerical(map_large, [:a], [0.13], rtol = 0.01)
+    check_numerical(map_large, [:b], [0.55], rtol = 0.01)
 
 end
