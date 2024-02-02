@@ -48,61 +48,13 @@ end
     @test mix_fit.prior.p[2] ≈ π rtol = 0.01
 end
 
-@testset "Reconcile fit_beta_mixture on small historical dataset" begin
-    # Create mixture from MAP prior on known small historical dataset
-    
-    prior_a = Beta(1 / 3, 1 / 3)
-    prior_b = Beta(5, 5)
-    prob_ctrl = 0.333
-
-    df_small = DataFrame(CSV.File("small_historic_dataset.csv"))
-    df_small.y = map(x -> x == 1, df_small.y) # Cast to Vector{Bool}
-    rng = StableRNG(123)
-    map_small = sample(
-        rng,
-        meta_analytic(df_small.y, df_small.time, df_small.trial, 
-                      prior_a, prior_b), 
-        NUTS(0.65), 
-        10_000
-    )
-    df_map_small = DataFrame(map_small)
-    pi_star_alpha = df_map_small.a .* df_map_small.b * nrow(df_small)
-    pi_star_beta = (1 .- df_map_small.a) .* df_map_small.b * nrow(df_small)
-    pi_star = [rand(Beta(alpha, beta), 1) 
-        for (alpha, beta) in zip(pi_star_alpha, pi_star_beta)]
-    pi_star = collect(Iterators.flatten(pi_star)) # Flatten
-    mix_small = fit_beta_mixture(pi_star, 2)
-    @test mean(mix_small) ≈ mean(pi_star) rtol = 0.02
-    @test std(mix_small) ≈ std(pi_star) rtol = 0.02
-
-end
-
-@testset "Reconcile fit_beta_mixture on large historical dataset" begin
-    # Create mixture from MAP prior on known large historical dataset
-    
-    prior_a = Beta(1 / 3, 1 / 3)
-    prior_b = Beta(5, 5)
-    prob_ctrl = 0.333
-
-    df_large = DataFrame(CSV.File("large_historic_dataset.csv"))
-    df_large.y = map(x -> x == 1, df_large.y) # Cast to Vector{Bool}
-
-    rng = StableRNG(123)
-    map_large = sample(
-        rng,
-        meta_analytic(df_large.y, df_large.time, df_large.trial, 
-                      prior_a, prior_b), 
-        NUTS(0.65), 
-        10_000
-    )
-    df_map_large = DataFrame(map_large)
-    pi_star_alpha = df_map_large.a .* df_map_large.b * nrow(df_large)
-    pi_star_beta = (1 .- df_map_large.a) .* df_map_large.b * nrow(df_large)
-    pi_star = [rand(Beta(alpha, beta), 1) 
-        for (alpha, beta) in zip(pi_star_alpha, pi_star_beta)]
-    pi_star = collect(Iterators.flatten(pi_star)) # Flatten
-    mix_large = fit_beta_mixture(pi_star, 2)
-    @test mean(mix_large) ≈ mean(pi_star) rtol = 0.02
-    @test std(mix_large) ≈ std(pi_star) rtol = 0.02
-
+@testset "Check that fit_beta_mixture can fit the mean and standard deviation of samples well" begin
+    Random.seed!(123)
+    N = 100
+    normal_dist = Normal(0, 5)
+    x = rand(normal_dist, N)
+    y = exp.(x) / (1.0 .+ exp.(x))
+    fit_y = fit_beta_mixture(y, 2)
+    @test mean(fit_y) ≈ mean(y) rtol = 0.02
+    @test std(fit_y) ≈ std(y) rtol = 0.02
 end
