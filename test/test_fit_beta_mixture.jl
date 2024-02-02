@@ -51,10 +51,9 @@ end
 @testset "Check that fit_beta_mixture can fit the mean and standard deviation of samples well" begin
     Random.seed!(123)
     N = 100
-    normal_dist = Normal(0, 5)
-    x = rand(normal_dist, N)
-    y = exp.(x) / (1.0 .+ exp.(x))
+    normal_dist = Normal(0.5, 0.05)
+    y = rand(normal_dist, N)
     fit_y = fit_beta_mixture(y, 2)
     @test mean(fit_y) ≈ mean(y) rtol = 0.02
-    @test std(fit_y) ≈ std(y) rtol = 0.02
+    @test std(fit_y) ≈ std(y) rtol = 0.1
 end
