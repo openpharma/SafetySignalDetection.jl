@@ -2,6 +2,7 @@ module SafetySignalDetection
 
 using Turing
 using StatsPlots
+using DataFrames
 using Distributions
 using SpecialFunctions
 using Statistics

@@ -64,7 +64,7 @@ end
 
 end
 
-@testset "meta_analytic_samples" begin
+@testset "meta_analytic_samples runs as expected" begin
     rng = StableRNG(123)
 
     n_trials = 5

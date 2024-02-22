@@ -24,8 +24,17 @@ meta_analysis_model(
 
     a ~ prior_a
     b ~ prior_b
-    pis ~ filldist(Beta(a * b * n, (1 - a) * b * n), n_trials)
 
+    # Truncate the two Beta distribution parameters to be larger than zero to avoid
+    # initialization problems.
+    beta_par_min = floatmin(Float64)
+    first = max(beta_par_min, a * b * n)
+    second = max(beta_par_min, (1 - a) * b * n)
+    
+    # Add one more pi parameter here to represent the new trial 
+    # where we want to have the prior for.
+    pis ~ filldist(Beta(first, second), n_trials + 1)
+    
     for i in 1:n
         pi = pis[trialindex[i]]
         mu = log(-log(1 - pi))
