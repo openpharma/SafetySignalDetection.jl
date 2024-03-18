@@ -1,4 +1,4 @@
-@testset "Check that meta_analysis_model works as before" begin
+@testset "meta_analysis_model works as before" begin
     rng = StableRNG(123)
 
     n_trials = 5
