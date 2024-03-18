@@ -14,7 +14,7 @@ blinded_analysis_model(
     exp_proportion::Float64)
 
 """
-function blinded_analysis_model(
+@model function blinded_analysis_model(
     y::Vector{Bool}, 
     time::Vector{Float64}, 
     prior_exp::Distribution, 
