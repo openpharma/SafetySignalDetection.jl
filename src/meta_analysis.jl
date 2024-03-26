@@ -43,16 +43,16 @@ meta_analysis_model(
         y[i] ~ Bernoulli(prob)
     end
 
-end;
+end
 
 
 """
 Meta Analytic Prior Samples Generation
 
 This function wraps the Turing model `meta_analysis_model` and runs it for a data frame `df` with:
-    - `y`: Bool (did the adverse event occur?)
-    - `time`: Float64 (time until adverse event or until last treatment or follow up)
-    - `trialindex`: Int64 (index of trials, starting from 1 and consecutively numbered)
+    - `y`: `Bool` (did the adverse event occur?)
+    - `time`: `Float64` (time until adverse event or until last treatment or follow up)
+    - `trialindex`: `Int64` (index of trials, starting from 1 and consecutively numbered)
 
     meta_analytic_samples(
     df::DataFrame,
